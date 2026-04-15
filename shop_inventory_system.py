@@ -16,7 +16,7 @@ def show_menu():
     print("4.search product")
     print("5.search_with_low_stock_alert")
     print("6.Record sale")
-    print("7.Daily report")
+    print("7.generate_Daily_report")
     print("8.Exit")
     print("===please choose any option===")
 def view_products():
@@ -25,7 +25,7 @@ def view_products():
     else:
         print("\n=== Current Inventory ==")
         for item in inventory:
-            print(f"  Name: {item['name']} | Price: Ksh {item['price']}")
+            print(f"Name: {item['name']} | Price: Ksh {item['price']} | Stock: {item['quantity']}")
 def add_product():
     print("\n=== Add New Product ===")
     name = input("please enter product name: ").strip().lower()
@@ -39,9 +39,13 @@ def add_product():
             print("Price must be greater than 0.")
             return
     except ValueError:
-        print("price is too low. Please enter a number for price.")
+        print("price is too low. Please enter a number for price")
         return
-    inventory.append({"name": name, "price": price})
+    quantity = int(input("Enter quantity: "))
+    if quantity < 0:
+        print("Quantity cannot be negative.")
+        return
+    inventory.append({"name": name, "price": price, "quantity": quantity})
     print(f"'{name}' added successfully!")
 def remove_product():
     name = input("Enter product to remove: ").strip().lower()
@@ -50,7 +54,7 @@ def remove_product():
             inventory.remove(item)
             print(f"'{name}' has been removed.")
             return
-    print(f"'{name}' was not found in inventory.")
+    print(f"'{name}' was not found in inventory")
 def search_product():
     print("\n=== Search Products ===")
     name = input("\nWhat are you searching for: ").strip().lower()
@@ -60,7 +64,7 @@ def search_product():
             print(f"\nFound: {name} = Price: {item['price']}")
             found = True
     if not found:
-        print("\nNo matching products found.")
+        print("\nNo matching products found")
 def search_with_low_stock_alert():
                 print("\n===search_with_low_stock_alert ===")
                 name = input("\nWhat are you searching for: ").strip().lower()
@@ -81,7 +85,7 @@ def record_sale():
         view_products()
         name = input("\n enter product name or DONE to finish: ").strip().lower()
         if name == "done":
-            print("thank you for coming here and not going to the other shops.")
+            print("thank you for coming here and not going to the other shops")
             break
         for item in inventory:
             if item["name"].lower() == name:
@@ -97,17 +101,16 @@ def record_sale():
                     print("Not enough stock available.")
                     continue
                 total_price = item["price"] * quantity
-                sales_log.append({
-                    "name": item["name"], "quantity": quantity,"total": total_price,"time": datetime.datetime.now() })
+                sales_log.append({ "name": item["name"], "price": item["price"], "quantity": quantity,"total": total_price,"time": datetime.datetime.now() })
                 item["quantity"] -= quantity
                 print(f"Total to pay: Ksh {total_price}")
                 try:
                     cash = float(input("Enter cash paid: "))
                 except ValueError:
-                    print("Invalid amount entered.")
+                    print("please enter the right amount")
                     return
                 if cash < total_price:
-                    print("you have insufficient funds please tp up!!!!!!.")
+                    print("you have insufficient funds please tp up!!!!!!")
                     return
                 change = cash - total_price
                 print("\n""====================")
@@ -126,17 +129,30 @@ def record_sale():
                 print("======================""\n")
                 break
         else:
-            print(f"Product '{name}' not found. Try again.")
-def daily_report():
+            print(f"Product '{name}' not found. Try again")
+def generate_daily_report():
     if not sales_log:
-        print("No sales recorded yet.")
+        print("No sales recorded yet")
         return
-    print("\n=== Daily Report ===")
+    print("\n=== Daily Sales Report ===")
     total_revenue = 0
+    total_items_sold = 0
+    print("\n=== Transactions ===")
     for sale in sales_log:
-        print(f"  Sold: {sale['name']} | Price: Ksh {sale['price']}")
-        total_revenue += sale["price"]
-    print(f"  Total Revenue: Ksh {total_revenue}")
+        name = sale["name"]
+        quantity = sale["quantity"]
+        total = sale["total"]
+        total_revenue += total
+        total_items_sold += quantity
+        print(f"{name} x{quantity} | Total: Ksh {total}")
+    print("\n=== Summary ===")
+    print(f"Total Items Sold: {total_items_sold}")
+    print(f"Total Revenue: Ksh {total_revenue}")
+    print("\n=== low stock items ===")
+    low_stock_items = sorted(inventory, key=lambda x: x["quantity"])[:3]
+    for item in low_stock_items:
+        warning = " low stock" if item["quantity"] <= 2 else ""
+        print(f"{item['name']} | Remaining: {item['quantity']} {warning}")
 def run():
     print("VICTOR`S SHOP SAVES YOU MONEYYY!!!")
     while True:
@@ -155,8 +171,8 @@ def run():
         elif choice == "6":
             record_sale()
         elif choice == "7":
-            daily_report()
+            generate_daily_report()
         elif choice == "8":
-            print("Thank you coming using Victor's Shop. Goodbye!")
+            print("Thank you coming using Victor's Shop Goodbye!")
             break
 run()
