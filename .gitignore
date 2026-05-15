@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+
+# Databases & backups
+*.db
+*.sqlite
+backups/
+*.csv
+
+# IDE (PyCharm)
+.idea/
+*.iml
+
+# Secrets / configs
+config.json
+
+# Logs & temp
+*.log
+*.tmp
