@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Saved Jobs - Resume Optimizer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-bookmark"></i> Saved Jobs</h1>
+    <p>Jobs you've saved for later review</p>
+</div>
+
+<div class="saved-jobs-container">
+    {% if saved_jobs %}
+        <div class="jobs-list">
+            {% for job in saved_jobs %}
+            <div class="job-card" onclick="window.location.href='{{ url_for('job_detail', job_id=job.job_id) }}'">
+                <div class="job-card-header">
+                    <div class="company-avatar">{{ job.company[0] }}</div>
+                    <div class="company-info">
+                        <div class="company-name">{{ job.company }}</div>
+                        <div class="job-title">{{ job.title }}</div>
+                    </div>
+                    <div class="job-badges">
+                        {% if job.country == 'Kenya' %}
+                        <span class="badge badge-kenya">🇰🇪 Kenya</span>
+                        {% elif job.is_remote %}
+                        <span class="badge badge-remote">🏠 Remote</span>
+                        {% else %}
+                        <span class="badge badge-global">{{ job.country }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="job-card-body">
+                    <div class="job-location"><i class="fas fa-map-marker-alt"></i> {{ job.location }}</div>
+                    {% if job.salary_min %}
+                    <div class="job-salary"><i class="fas fa-money-bill-wave"></i> {{ job.currency }} {{ "{:,.0f}".format(job.salary_min) }} - {{ "{:,.0f}".format(job.salary_max) }}</div>
+                    {% endif %}
+                    <div class="job-description">{{ job.description[:180] }}...</div>
+                    {% if job.notes %}
+                    <div class="job-notes"><i class="fas fa-sticky-note"></i> {{ job.notes }}</div>
+                    {% endif %}
+                </div>
+                <div class="job-card-footer">
+                    <span class="job-source"><i class="fas fa-database"></i> {{ job.source }}</span>
+                    <div class="job-actions">
+                        <form method="post" action="{{ url_for('apply_job', job_id=job.job_id) }}" style="display: inline;">
+                            <button type="submit" class="btn-primary-small">Apply Now</button>
+                        </form>
+                        <button class="btn-outline-small" onclick="event.stopPropagation(); addNote('{{ job.job_id }}')">
+                            <i class="fas fa-sticky-note"></i> Add Note
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-bookmark"></i>
+            <h3>No saved jobs yet</h3>
+            <p>Browse jobs and click the "Save" button to bookmark interesting positions</p>
+            <a href="{{ url_for('jobs') }}" class="btn btn-primary">Browse Jobs →</a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function addNote(jobId) {
+    const note = prompt('Add a note for this job:');
+    if (note) {
+        fetch(`/save/${jobId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `notes=${encodeURIComponent(note)}`
+        }).then(() => location.reload());
+    }
+}
+</script>
+{% endblock %}

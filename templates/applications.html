@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+
+{% block title %}My Applications - Resume Optimizer{% endblock %}
+
+{% block content %}
+<style>
+    /* Hide default base canvas */
+    #bg-canvas {
+        display: none !important;
+    }
+    /* Custom green 3D canvas */
+    #applications-bg-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -2;
+        pointer-events: none;
+    }
+    .page-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        position: relative;
+        z-index: 1;
+    }
+    .page-header h1 {
+        font-size: 2.5rem;
+        background: linear-gradient(135deg, #10b981, #059669);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+    .page-header p {
+        color: rgba(255,255,255,0.9);
+    }
+    .applications-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 2rem;
+        position: relative;
+        z-index: 1;
+    }
+    .applications-stats {
+        display: flex;
+        gap: 1.5rem;
+        justify-content: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+    .stat {
+        background: rgba(255,255,255,0.9);
+        backdrop-filter: blur(8px);
+        border-radius: 1rem;
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 600;
+        color: #1e293b;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border: 1px solid rgba(255,255,255,0.3);
+    }
+    .stat i { font-size: 1.5rem; }
+    .application-card {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(8px);
+        border-radius: 1.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255,255,255,0.3);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .application-card:hover {
+        transform: translateY(-4px);
+        background: white;
+        box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    }
+    .application-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+    .application-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+    .application-company {
+        font-weight: 600;
+        color: #10b981;
+    }
+    .application-location {
+        font-size: 0.85rem;
+        color: #64748b;
+        margin-top: 0.25rem;
+    }
+    .application-status {
+        text-align: right;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: #e2e8f0;
+        color: #1e293b;
+    }
+    .status-applied { background: #e0e7ff; color: #4338ca; }
+    .status-reviewing { background: #fef3c7; color: #d97706; }
+    .status-interview { background: #d1fae5; color: #065f46; }
+    .status-offer { background: #fce7f3; color: #be185d; }
+    .status-rejected { background: #fee2e2; color: #dc2626; }
+    .application-salary {
+        margin: 0.75rem 0;
+        font-size: 0.9rem;
+        color: #10b981;
+        background: rgba(16,185,129,0.1);
+        padding: 0.5rem;
+        border-radius: 0.75rem;
+        display: inline-block;
+    }
+    .application-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin: 1rem 0 0.5rem;
+    }
+    .btn-outline-small {
+        background: transparent;
+        border: 1px solid #10b981;
+        color: #10b981;
+        padding: 0.375rem 0.875rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-weight: 500;
+        transition: 0.2s;
+    }
+    .btn-outline-small:hover {
+        background: #10b981;
+        color: white;
+    }
+    .btn-primary-small {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        border: none;
+        padding: 0.375rem 0.875rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-weight: 500;
+        transition: 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-primary-small:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+    }
+    .application-notes {
+        margin-top: 0.75rem;
+        padding: 0.5rem;
+        background: rgba(0,0,0,0.05);
+        border-radius: 0.5rem;
+        font-size: 0.85rem;
+        color: #475569;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        background: rgba(255,255,255,0.9);
+        backdrop-filter: blur(8px);
+        border-radius: 1.5rem;
+    }
+    .empty-state i {
+        font-size: 4rem;
+        color: #10b981;
+        margin-bottom: 1rem;
+    }
+    .empty-state h3 {
+        margin-bottom: 0.5rem;
+    }
+    .empty-state p {
+        margin-bottom: 1rem;
+        color: #64748b;
+    }
+    @media (max-width: 768px) {
+        .applications-container { padding: 1rem; }
+        .application-header { flex-direction: column; gap: 0.5rem; }
+        .application-status { text-align: left; }
+        .applications-stats { flex-direction: column; align-items: stretch; }
+        .stat { justify-content: center; }
+    }
+</style>
+
+<canvas id="applications-bg-canvas"></canvas>
+<script type="module">
+    import * as THREE from 'three';
+
+    const canvas = document.getElementById('applications-bg-canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x000000, 0);
+
+    // Green particle sphere
+    const particlesCount = 2000;
+    const positions = new Float32Array(particlesCount * 3);
+    const colors = new Float32Array(particlesCount * 3);
+
+    for (let i = 0; i < particlesCount; i++) {
+        // Spherical distribution with slight randomness
+        const radius = 14;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const x = radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.sin(phi) * Math.sin(theta) * 0.6;
+        const z = radius * Math.cos(phi);
+        positions[i*3] = x;
+        positions[i*3+1] = y;
+        positions[i*3+2] = z;
+
+        // Color: green gradient (light to dark)
+        const hue = 0.35 + (i / particlesCount) * 0.15; // 0.35→0.5
+        const saturation = 0.8;
+        const lightness = 0.6;
+        const color = new THREE.Color().setHSL(hue, saturation, lightness);
+        colors[i*3] = color.r;
+        colors[i*3+1] = color.g;
+        colors[i*3+2] = color.b;
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const material = new THREE.PointsMaterial({ size: 0.1, vertexColors: true, transparent: true, opacity: 0.8 });
+    const particles = new THREE.Points(geometry, material);
+    scene.add(particles);
+
+    // Floating smaller stars
+    const starCount = 1000;
+    const starPositions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+        starPositions[i*3] = (Math.random() - 0.5) * 35;
+        starPositions[i*3+1] = (Math.random() - 0.5) * 25;
+        starPositions[i*3+2] = (Math.random() - 0.5) * 30 - 15;
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0x88ff88, size: 0.06 });
+    const stars = new THREE.Points(starGeo, starMat);
+    scene.add(stars);
+
+    camera.position.z = 22;
+
+    function animate() {
+        requestAnimationFrame(animate);
+        particles.rotation.y += 0.001;
+        particles.rotation.x += 0.0005;
+        stars.rotation.y -= 0.0003;
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+</script>
+
+<div class="page-header">
+    <h1><i class="fas fa-file-alt"></i> My Applications</h1>
+    <p>Track all your job applications</p>
+</div>
+
+<div class="applications-container">
+    {% if applications %}
+        <div class="applications-stats">
+            <div class="stat">
+                <i class="fas fa-clock"></i>
+                <span>{{ applications|length }} Total Applications</span>
+            </div>
+            <div class="stat">
+                <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                <span>{{ applications|selectattr('status', 'equalto', 'interview')|list|length }} Interviews</span>
+            </div>
+            <div class="stat">
+                <i class="fas fa-trophy" style="color: #f59e0b;"></i>
+                <span>{{ applications|selectattr('status', 'equalto', 'offer')|list|length }} Offers</span>
+            </div>
+        </div>
+
+        <div class="applications-list">
+            {% for app in applications %}
+            <div class="application-card">
+                <div class="application-header">
+                    <div class="application-info">
+                        <div class="application-title">{{ app.title }}</div>
+                        <div class="application-company">{{ app.company }}</div>
+                        <div class="application-location"><i class="fas fa-map-marker-alt"></i> {{ app.location }}</div>
+                    </div>
+                    <div class="application-status">
+                        <span class="status-badge status-{{ app.status }}">{{ app.status|title }}</span>
+                        <small>Applied: {{ app.applied_date[:10] }}</small>
+                    </div>
+                </div>
+
+                {% if app.salary_min %}
+                <div class="application-salary">
+                    <i class="fas fa-money-bill-wave"></i> Salary Range: {{ app.currency }} {{ "{:,.0f}".format(app.salary_min) }} - {{ "{:,.0f}".format(app.salary_max) }}
+                </div>
+                {% endif %}
+
+                <div class="application-actions">
+                    <button class="btn-outline-small" onclick="updateStatus({{ app.id }})">
+                        <i class="fas fa-edit"></i> Update Status
+                    </button>
+                    <a href="{{ url_for('job_detail', job_id=app.job_id) }}" class="btn-primary-small">
+                        <i class="fas fa-eye"></i> View Job
+                    </a>
+                </div>
+
+                {% if app.notes %}
+                <div class="application-notes">
+                    <i class="fas fa-sticky-note"></i> {{ app.notes }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <h3>No applications yet</h3>
+            <p>Start applying to jobs to see them here!</p>
+            <a href="{{ url_for('jobs') }}" class="btn-primary-small" style="padding: 0.75rem 1.5rem;">Browse Jobs</a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function updateStatus(appId) {
+    const status = prompt('Update application status:\nOptions: applied, reviewing, interview, offer, rejected');
+    if (status && ['applied','reviewing','interview','offer','rejected'].includes(status)) {
+        fetch(`/update-application/${appId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `status=${status}`
+        }).then(() => location.reload());
+    } else if (status) {
+        alert('Invalid status. Please choose one of: applied, reviewing, interview, offer, rejected');
+    }
+}
+</script>
+{% endblock %}

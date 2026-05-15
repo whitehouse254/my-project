@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+
+{% block title %}Pricing - Resume Optimizer{% endblock %}
+
+{% block content %}
+<style>
+    /* Hide default canvas from base.html */
+    #bg-canvas {
+        display: none !important;
+    }
+    /* Custom green 3D canvas */
+    #pricing-bg-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -2;
+        pointer-events: none;
+    }
+    .pricing-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+        position: relative;
+        z-index: 1;
+    }
+    .pricing-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        color: white;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .pricing-header h1 {
+        font-size: 2.5rem;
+        background: linear-gradient(135deg, #10b981, #059669);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+    .pricing-header p {
+        color: rgba(255,255,255,0.9);
+    }
+    .pricing-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+    .pricing-card {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(8px);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        position: relative;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        border: 1px solid rgba(255,255,255,0.3);
+    }
+    .pricing-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 30px -10px rgba(0,0,0,0.2);
+        background: white;
+    }
+    .pricing-card.popular {
+        border: 2px solid #10b981;
+        transform: scale(1.02);
+    }
+    .pricing-card.popular:hover {
+        transform: scale(1.03) translateY(-8px);
+    }
+    .pricing-badge {
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 0.25rem 1rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .pricing-price {
+        font-size: 3rem;
+        font-weight: 800;
+        color: #10b981;
+        margin: 1rem 0 0.25rem;
+    }
+    .pricing-period {
+        color: #64748b;
+        margin-bottom: 1.5rem;
+    }
+    .pricing-features {
+        list-style: none;
+        margin: 1.5rem 0;
+        text-align: left;
+    }
+    .pricing-features li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .pricing-features i.fa-check {
+        color: #10b981;
+        width: 1.2rem;
+    }
+    .pricing-features i.fa-times {
+        color: #ef4444;
+        width: 1.2rem;
+    }
+    .btn {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+        cursor: pointer;
+        border: none;
+        width: 100%;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16,185,129,0.4);
+    }
+    .btn-outline {
+        background: transparent;
+        border: 2px solid #10b981;
+        color: #10b981;
+    }
+    .btn-outline:hover {
+        background: #10b981;
+        color: white;
+    }
+    .annual-savings {
+        text-align: center;
+        margin: 2rem 0;
+        padding: 1rem;
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(4px);
+        border-radius: 1rem;
+    }
+    .annual-savings p {
+        margin-bottom: 0.5rem;
+        color: white;
+    }
+    .faq-section {
+        margin-top: 3rem;
+    }
+    .faq-section h2 {
+        text-align: center;
+        color: white;
+        margin-bottom: 2rem;
+    }
+    .faq-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+    .faq-item {
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(4px);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        transition: 0.2s;
+    }
+    .faq-item:hover {
+        background: rgba(255,255,255,0.2);
+    }
+    .faq-item h4 {
+        color: white;
+        margin-bottom: 0.5rem;
+    }
+    .faq-item p {
+        color: rgba(255,255,255,0.8);
+        font-size: 0.9rem;
+    }
+    @media (max-width: 768px) {
+        .pricing-container { padding: 1rem; }
+        .pricing-grid { grid-template-columns: 1fr; }
+        .pricing-card.popular { transform: scale(1); }
+        .faq-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<canvas id="pricing-bg-canvas"></canvas>
+<script type="module">
+    import * as THREE from 'three';
+
+    const canvas = document.getElementById('pricing-bg-canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x000000, 0);
+
+    // Green particles in a swirling torus knot
+    const particlesCount = 2500;
+    const positions = new Float32Array(particlesCount * 3);
+    const colors = new Float32Array(particlesCount * 3);
+
+    for (let i = 0; i < particlesCount; i++) {
+        const t = (i / particlesCount) * Math.PI * 2;
+        const radius = 3.5;
+        const tube = 0.9;
+        const p = 2;
+        const q = 5;
+        const x = radius * (1 + tube * Math.cos(q * t)) * Math.cos(p * t);
+        const y = radius * (1 + tube * Math.cos(q * t)) * Math.sin(p * t);
+        const z = radius * tube * Math.sin(q * t);
+        positions[i*3] = x * 2.2;
+        positions[i*3+1] = y * 2.2;
+        positions[i*3+2] = z * 2.2;
+
+        // Green gradient from light mint to deep forest
+        const hue = 0.35 + (i / particlesCount) * 0.15; // 0.35 → 0.5 = green range
+        const saturation = 0.9;
+        const lightness = 0.6;
+        const color = new THREE.Color().setHSL(hue, saturation, lightness);
+        colors[i*3] = color.r;
+        colors[i*3+1] = color.g;
+        colors[i*3+2] = color.b;
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const particleMaterial = new THREE.PointsMaterial({ size: 0.07, vertexColors: true, transparent: true, opacity: 0.9 });
+    const particleSystem = new THREE.Points(geometry, particleMaterial);
+    scene.add(particleSystem);
+
+    // Floating small stars
+    const starCount = 1200;
+    const starPositions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+        starPositions[i*3] = (Math.random() - 0.5) * 200;
+        starPositions[i*3+1] = (Math.random() - 0.5) * 120;
+        starPositions[i*3+2] = (Math.random() - 0.5) * 80 - 30;
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0x88ff88, size: 0.08 });
+    const stars = new THREE.Points(starGeo, starMat);
+    scene.add(stars);
+
+    camera.position.z = 22;
+
+    function animate() {
+        requestAnimationFrame(animate);
+        particleSystem.rotation.y += 0.002;
+        particleSystem.rotation.x += 0.001;
+        stars.rotation.y += 0.0003;
+        stars.rotation.x += 0.0002;
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+</script>
+
+<div class="pricing-container">
+    <div class="pricing-header">
+        <h1><i class="fas fa-tags"></i> Simple, Transparent Pricing</h1>
+        <p>Choose the plan that works for you</p>
+    </div>
+
+    <div class="pricing-grid">
+        <!-- Free Plan -->
+        <div class="pricing-card">
+            <div class="pricing-badge">FREE</div>
+            <div class="pricing-price">$0</div>
+            <div class="pricing-period">forever</div>
+            <ul class="pricing-features">
+                <li><i class="fas fa-check"></i> Browse jobs</li>
+                <li><i class="fas fa-check"></i> Save up to 5 jobs</li>
+                <li><i class="fas fa-check"></i> Basic job search</li>
+                <li><i class="fas fa-check"></i> Company reviews</li>
+                <li><i class="fas fa-times"></i> AI resume analysis</li>
+                <li><i class="fas fa-times"></i> Job alerts</li>
+                <li><i class="fas fa-times"></i> Salary calculator</li>
+                <li><i class="fas fa-times"></i> Interview prep</li>
+            </ul>
+            <a href="{{ url_for('register') }}" class="btn btn-outline">Get Started</a>
+        </div>
+
+        <!-- Premium Plan (Most Popular) -->
+        <div class="pricing-card popular">
+            <div class="pricing-badge">MOST POPULAR</div>
+            <div class="pricing-price">$9.99</div>
+            <div class="pricing-period">per month</div>
+            <ul class="pricing-features">
+                <li><i class="fas fa-check"></i> Everything in Free</li>
+                <li><i class="fas fa-check"></i> Unlimited job saves</li>
+                <li><i class="fas fa-check"></i> AI resume analysis</li>
+                <li><i class="fas fa-check"></i> Daily job alerts</li>
+                <li><i class="fas fa-check"></i> Salary calculator</li>
+                <li><i class="fas fa-check"></i> Interview preparation</li>
+                <li><i class="fas fa-check"></i> Application tracking</li>
+                <li><i class="fas fa-check"></i> Priority support</li>
+            </ul>
+            <button class="btn btn-primary" onclick="startCheckout('monthly')">Get Started</button>
+        </div>
+
+        <!-- Pro Plan -->
+        <div class="pricing-card">
+            <div class="pricing-badge">PRO</div>
+            <div class="pricing-price">$19.99</div>
+            <div class="pricing-period">per month</div>
+            <ul class="pricing-features">
+                <li><i class="fas fa-check"></i> Everything in Premium</li>
+                <li><i class="fas fa-check"></i> Unlimited job applications</li>
+                <li><i class="fas fa-check"></i> Resume review service</li>
+                <li><i class="fas fa-check"></i> 1-on-1 career coaching</li>
+                <li><i class="fas fa-check"></i> LinkedIn optimization</li>
+                <li><i class="fas fa-check"></i> Priority job alerts</li>
+                <li><i class="fas fa-check"></i> Exclusive job listings</li>
+                <li><i class="fas fa-check"></i> 24/7 priority support</li>
+            </ul>
+            <button class="btn btn-outline" onclick="startCheckout('pro_monthly')">Get Started</button>
+        </div>
+    </div>
+
+           <div class="annual-savings">
+        <p><i class="fas fa-gift"></i> Save 20% with annual billing</p>
+        <button class="btn-outline" onclick="startCheckout('yearly')">Switch to Yearly</button>
+    </div>
+
+    <div class="faq-section">
+        <h2>Frequently Asked Questions</h2>
+        <div class="faq-grid">
+            <div class="faq-item">
+                <h4>Can I cancel anytime?</h4>
+                <p>Yes, you can cancel your subscription at any time. No hidden fees.</p>
+            </div>
+            <div class="faq-item">
+                <h4>What payment methods do you accept?</h4>
+                <p>We accept all major credit cards via Stripe (Visa, Mastercard, American Express).</p>
+            </div>
+            <div class="faq-item">
+                <h4>Is there a free trial?</h4>
+                <p>We don't offer a free trial, but you can use the free plan to test our basic features.</p>
+            </div>
+            <div class="faq-item">
+                <h4>Can I switch plans?</h4>
+                <p>Yes, you can upgrade or downgrade your plan at any time.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Replace 'your_publishable_key' with your actual Stripe publishable key
+    const stripe = Stripe('your_publishable_key');
+
+    async function startCheckout(planType) {
+        const response = await fetch('/create-checkout-session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ plan_type: planType })
+        });
+        const session = await response.json();
+        const result = await stripe.redirectToCheckout({
+            sessionId: session.id
+        });
+        if (result.error) {
+            alert(result.error.message);
+        }
+    }
+</script>
+{% endblock %}

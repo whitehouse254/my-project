@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Hide default base canvas for this page only */
+    #bg-canvas {
+        display: none !important;
+    }
+    #jobs-bg-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -2;
+        pointer-events: none;
+    }
+    .jobs-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+        position: relative;
+        z-index: 1;
+    }
+    .page-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .page-header h1 {
+        font-size: 2.5rem;
+        background: linear-gradient(135deg, #f59e0b, #ea580c);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+    .page-header p {
+        color: rgba(255,255,255,0.9);
+    }
+    .filter-form {
+        background: rgba(0,0,0,0.4);
+        backdrop-filter: blur(12px);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(255,255,255,0.25);
+    }
+    .filter-form input, .filter-form select {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 0.5rem;
+        background: rgba(255,255,255,0.95);
+        font-size: 1rem;
+    }
+    .filter-form input:focus, .filter-form select:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px #f59e0b;
+    }
+    .filter-form button {
+        background: linear-gradient(135deg, #f59e0b, #ea580c);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    .filter-form button:hover { transform: translateY(-2px); }
+    .job-section { margin-bottom: 2.5rem; }
+    .job-section h2 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+        color: white;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .job-card {
+        background: rgba(255,255,255,0.96);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        border: 1px solid rgba(255,255,255,0.5);
+    }
+    .job-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.25);
+        background: white;
+    }
+    .job-card-header {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    .company-avatar {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, #f59e0b, #ea580c);
+        border-radius: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.6rem;
+        color: white;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .job-info { flex: 1; }
+    .company-name { font-weight: 700; font-size: 1.2rem; color: #1e293b; }
+    .job-title { font-weight: 600; color: #d97706; margin: 0.25rem 0 0.5rem; }
+    .job-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin: 0.75rem 0;
+        font-size: 0.9rem;
+        color: #475569;
+    }
+    .job-meta i { width: 1.2rem; color: #f59e0b; }
+    .job-description { color: #334155; line-height: 1.5; margin: 0.75rem 0; }
+    .job-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #e2e8f0;
+    }
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: #e2e8f0;
+        color: #1e293b;
+    }
+    .badge-kenya { background: #e0e7ff; color: #4338ca; }
+    .badge-remote { background: #fef3c7; color: #d97706; }
+    .job-source { font-size: 0.75rem; color: #64748b; }
+    .btn-view {
+        background: none;
+        border: none;
+        color: #d97706;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .btn-view:hover { transform: translateX(4px); color: #ea580c; }
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        background: rgba(0,0,0,0.5);
+        border-radius: 1rem;
+        backdrop-filter: blur(8px);
+    }
+    .empty-state i { font-size: 4rem; color: #f59e0b; margin-bottom: 1rem; }
+    .empty-state p { color: white; }
+    @media (max-width: 768px) {
+        .jobs-container { padding: 1rem; }
+        .job-card-header { flex-direction: column; align-items: center; text-align: center; }
+        .company-avatar { margin: 0 auto; }
+        .job-meta { justify-content: center; }
+        .job-footer { flex-direction: column; gap: 0.5rem; }
+        .filter-form { flex-direction: column; }
+    }
+</style>
+
+<canvas id="jobs-bg-canvas"></canvas>
+<script type="module">
+    import * as THREE from 'three';
+    const canvas = document.getElementById('jobs-bg-canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x000000, 0);
+
+    const particlesCount = 2000;
+    const positions = new Float32Array(particlesCount * 3);
+    const colors = new Float32Array(particlesCount * 3);
+    for (let i = 0; i < particlesCount; i++) {
+        const t = (i / particlesCount) * Math.PI * 2;
+        const radius = 3;
+        const tube = 0.8;
+        const p = 3;
+        const q = 7;
+        const x = radius * (1 + tube * Math.cos(q * t)) * Math.cos(p * t);
+        const y = radius * (1 + tube * Math.cos(q * t)) * Math.sin(p * t);
+        const z = radius * tube * Math.sin(q * t);
+        positions[i*3] = x * 2.5;
+        positions[i*3+1] = y * 2.5;
+        positions[i*3+2] = z * 2.5;
+        const color = new THREE.Color().setHSL(0.10 + (i / particlesCount) * 0.1, 1.0, 0.6);
+        colors[i*3] = color.r;
+        colors[i*3+1] = color.g;
+        colors[i*3+2] = color.b;
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const material = new THREE.PointsMaterial({ size: 0.08, vertexColors: true, transparent: true, opacity: 0.8 });
+    const particlesSystem = new THREE.Points(geometry, material);
+    scene.add(particlesSystem);
+
+    const starCount = 800;
+    const starPositions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+        starPositions[i*3] = (Math.random() - 0.5) * 200;
+        starPositions[i*3+1] = (Math.random() - 0.5) * 100;
+        starPositions[i*3+2] = (Math.random() - 0.5) * 80 - 40;
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0xffaa66, size: 0.1 });
+    const stars = new THREE.Points(starGeo, starMat);
+    scene.add(stars);
+
+    camera.position.z = 18;
+    function animate() {
+        requestAnimationFrame(animate);
+        particlesSystem.rotation.y += 0.003;
+        particlesSystem.rotation.x += 0.002;
+        stars.rotation.y -= 0.0005;
+        renderer.render(scene, camera);
+    }
+    animate();
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+</script>
+
+<div class="jobs-container">
+    <div class="page-header">
+        <h1>🔍 Browse Jobs</h1>
+        <p>Find your next opportunity from Kenya and around the world</p>
+    </div>
+
+    <form method="get" class="filter-form">
+        <input type="text" name="search" placeholder="Job title, company, or keyword" value="{{ search }}">
+        <select name="country">
+            <option value="All" {% if selected_country == 'All' %}selected{% endif %}>All Countries</option>
+            <option value="Kenya" {% if selected_country == 'Kenya' %}selected{% endif %}>🇰🇪 Kenya</option>
+            <option value="USA" {% if selected_country == 'USA' %}selected{% endif %}>🇺🇸 USA</option>
+            <option value="UK" {% if selected_country == 'UK' %}selected{% endif %}>🇬🇧 UK</option>
+            <option value="Remote" {% if selected_country == 'Remote' %}selected{% endif %}>🌍 Remote</option>
+        </select>
+        <button type="submit">Search Jobs</button>
+    </form>
+
+    {% if kenya_jobs %}
+    <div class="job-section">
+        <h2><span>🇰🇪</span> Jobs in Kenya</h2>
+        {% for job in kenya_jobs %}
+        <div class="job-card" onclick="location.href='{{ url_for('job_detail', job_id=job.job_id) }}'">
+            <div class="job-card-header">
+                <div class="company-avatar">{{ job.company[0] }}</div>
+                <div class="job-info">
+                    <div class="company-name">{{ job.company }}</div>
+                    <div class="job-title">{{ job.title }}</div>
+                    <div class="job-meta">
+                        <span><i class="fas fa-map-marker-alt"></i> {{ job.location }}</span>
+                        <span><i class="fas fa-money-bill-wave"></i> {{ job.currency }} {{ "{:,.0f}".format(job.salary_min) if job.salary_min else 'N/A' }} - {{ "{:,.0f}".format(job.salary_max) if job.salary_max else 'N/A' }}</span>
+                        <span><i class="fas fa-clock"></i> {{ job.job_type or 'Full-time' }}</span>
+                        {% if job.is_remote %}<span><i class="fas fa-home"></i> Remote</span>{% endif %}
+                    </div>
+                    <div class="job-description">{{ job.description[:180] }}{% if job.description|length > 180 %}...{% endif %}</div>
+                </div>
+            </div>
+            <div class="job-footer">
+                <div>
+                    <span class="badge badge-kenya">🇰🇪 {{ job.country }}</span>
+                    {% if job.is_remote %}<span class="badge badge-remote">🏠 Remote</span>{% endif %}
+                    <span class="job-source"><i class="fas fa-database"></i> {{ job.source }}</span>
+                </div>
+                <button class="btn-view" onclick="event.stopPropagation(); location.href='{{ url_for('job_detail', job_id=job.job_id) }}'">View Details →</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if other_jobs %}
+    <div class="job-section">
+        <h2><span>🌍</span> Jobs Worldwide</h2>
+        {% for job in other_jobs %}
+        <div class="job-card" onclick="location.href='{{ url_for('job_detail', job_id=job.job_id) }}'">
+            <div class="job-card-header">
+                <div class="company-avatar">{{ job.company[0] }}</div>
+                <div class="job-info">
+                    <div class="company-name">{{ job.company }}</div>
+                    <div class="job-title">{{ job.title }}</div>
+                    <div class="job-meta">
+                        <span><i class="fas fa-map-marker-alt"></i> {{ job.location }}, {{ job.country }}</span>
+                        <span><i class="fas fa-money-bill-wave"></i> {{ job.currency }} {{ "{:,.0f}".format(job.salary_min) if job.salary_min else 'N/A' }} - {{ "{:,.0f}".format(job.salary_max) if job.salary_max else 'N/A' }}</span>
+                        <span><i class="fas fa-clock"></i> {{ job.job_type or 'Full-time' }}</span>
+                        {% if job.is_remote %}<span><i class="fas fa-home"></i> Remote</span>{% endif %}
+                    </div>
+                    <div class="job-description">{{ job.description[:180] }}{% if job.description|length > 180 %}...{% endif %}</div>
+                </div>
+            </div>
+            <div class="job-footer">
+                <div>
+                    <span class="badge">{{ job.country }}</span>
+                    {% if job.is_remote %}<span class="badge badge-remote">🏠 Remote</span>{% endif %}
+                    <span class="job-source"><i class="fas fa-database"></i> {{ job.source }}</span>
+                </div>
+                <button class="btn-view" onclick="event.stopPropagation(); location.href='{{ url_for('job_detail', job_id=job.job_id) }}'">View Details →</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if not kenya_jobs and not other_jobs %}
+    <div class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <p>No jobs found. Try a different keyword or location.</p>
+        <p style="margin-top: 1rem;"><small>💡 Tip: Search for "Engineer", "Teacher", "Nurse", or "Driver"</small></p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

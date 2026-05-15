@@ -1,0 +1,3 @@
+battery,0
+battery,25
+battery,40

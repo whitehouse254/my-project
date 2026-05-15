@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - Resume Optimizer{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <h1><i class="fas fa-user-circle"></i> My Profile</h1>
+        <p>Manage your personal information and resume</p>
+    </div>
+
+    <div class="profile-grid">
+        <div class="profile-card">
+            <h3><i class="fas fa-user"></i> Personal Information</h3>
+            <form method="post">
+                <div class="form-group">
+                    <label>Bio</label>
+                    <textarea name="bio" class="form-control" rows="4" placeholder="Tell us about yourself...">{{ user.bio or '' }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Skills (comma separated)</label>
+                    <input type="text" name="skills" class="form-control" value="{{ user.skills or '' }}" placeholder="Python, JavaScript, Project Management, etc.">
+                </div>
+                <div class="form-group">
+                    <label>Years of Experience</label>
+                    <input type="number" name="experience_years" class="form-control" value="{{ user.experience_years or 0 }}">
+                </div>
+                <div class="form-group">
+                    <label>LinkedIn URL</label>
+                    <input type="url" name="linkedin_url" class="form-control" value="{{ user.linkedin_url or '' }}" placeholder="https://linkedin.com/in/username">
+                </div>
+                <div class="form-group">
+                    <label>GitHub URL</label>
+                    <input type="url" name="github_url" class="form-control" value="{{ user.github_url or '' }}" placeholder="https://github.com/username">
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
+        </div>
+
+        <div class="profile-card">
+            <h3><i class="fas fa-file-alt"></i> Resumes</h3>
+            <form method="post" action="{{ url_for('upload_resume') }}" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>Upload New Resume</label>
+                    <input type="file" name="resume" accept=".pdf,.docx,.txt" class="form-control">
+                </div>
+                <button type="submit" class="btn btn-primary">Upload Resume</button>
+            </form>
+
+            <div class="resumes-list">
+                <h4>Your Resumes</h4>
+                {% if resumes %}
+                    {% for resume in resumes %}
+                    <div class="resume-item">
+                        <div class="resume-info">
+                            <i class="fas fa-file-pdf"></i>
+                            <span>{{ resume.filename }}</span>
+                            <small>Uploaded: {{ resume.uploaded_date[:10] }}</small>
+                            <span class="resume-score">Score: {{ resume.score }}%</span>
+                        </div>
+                        <div class="resume-actions">
+                            <button class="btn-outline-small" onclick="alert('Analysis: {{ resume.content[:200] }}')">Analyze</button>
+                            <button class="btn-danger-small" onclick="alert('Delete resume')">Delete</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No resumes uploaded yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="profile-card">
+            <h3><i class="fas fa-certificate"></i> Skill Assessments</h3>
+            <div class="assessments-list">
+                {% if assessments %}
+                    {% for assessment in assessments %}
+                    <div class="assessment-item">
+                        <div class="assessment-info">
+                            <strong>{{ assessment.skill_name }}</strong>
+                            <span>Score: {{ assessment.score }}%</span>
+                            <small>Taken: {{ assessment.taken_date[:10] }}</small>
+                        </div>
+                        {% if assessment.certificate_url %}
+                        <a href="{{ assessment.certificate_url }}" class="btn-outline-small" target="_blank">View Certificate</a>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No skill assessments yet.</p>
+                {% endif %}
+                <button class="btn-outline" onclick="alert('Coming soon! Take skill tests to earn certificates.')">Take Assessment</button>
+            </div>
+        </div>
+
+        <div class="profile-card">
+            <h3><i class="fas fa-crown"></i> Subscription</h3>
+            <div class="subscription-info">
+                <p><strong>Current Plan:</strong> {{ user.subscription|title }}</p>
+                {% if user.subscription_end %}
+                <p><strong>Valid Until:</strong> {{ user.subscription_end[:10] }}</p>
+                {% endif %}
+                {% if user.subscription == 'free' %}
+                <p>Upgrade to Premium for unlimited access to all features!</p>
+                <a href="{{ url_for('pricing') }}" class="btn btn-primary">Upgrade Now</a>
+                {% else %}
+                <p>Thank you for being a Premium member! 🎉</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

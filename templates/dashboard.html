@@ -1,0 +1,505 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Resume Optimizer{% endblock %}
+
+{% block content %}
+<style>
+    /* Hide default base canvas */
+    #bg-canvas {
+        display: none !important;
+    }
+    /* Custom golden 3D canvas */
+    #dashboard-bg-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -2;
+        pointer-events: none;
+    }
+    .dashboard-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+        position: relative;
+        z-index: 1;
+    }
+    .dashboard-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .dashboard-header h1 {
+        font-size: 2rem;
+        background: linear-gradient(135deg, #f59e0b, #ea580c);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+    .dashboard-header p {
+        color: rgba(255,255,255,0.9);
+    }
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .stat-card {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(8px);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        text-align: center;
+        transition: 0.3s;
+        border: 1px solid rgba(255,255,255,0.3);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .stat-card:hover { transform: translateY(-4px); }
+    .stat-value { font-size: 2rem; font-weight: 800; color: #f59e0b; }
+    .stat-label { color: #475569; margin-top: 0.25rem; }
+    .status-breakdown {
+        background: rgba(255,255,255,0.9);
+        backdrop-filter: blur(8px);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .status-breakdown h3 {
+        margin-bottom: 1rem;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .status-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 0.75rem;
+    }
+    .status-label { width: 80px; font-weight: 500; }
+    .progress-bar {
+        flex: 1;
+        height: 8px;
+        background: #e2e8f0;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .progress {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s;
+    }
+    .status-count { width: 40px; text-align: right; font-weight: 600; }
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .dashboard-card {
+        background: rgba(255,255,255,0.9);
+        backdrop-filter: blur(8px);
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border: 1px solid rgba(255,255,255,0.3);
+    }
+    .card-header {
+        background: linear-gradient(135deg, #f59e0b, #ea580c);
+        color: white;
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .card-header h3 { margin: 0; font-size: 1.1rem; }
+    .btn-link { color: white; text-decoration: none; font-size: 0.85rem; }
+    .card-body { padding: 1rem; max-height: 400px; overflow-y: auto; }
+    .job-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .job-info { flex: 1; }
+    .job-title { font-weight: 600; }
+    .job-company { font-size: 0.85rem; color: #475569; }
+    .job-location { font-size: 0.75rem; color: #64748b; }
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 1rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        background: #fee2e2;
+        color: #dc2626;
+    }
+    .status-applied { background: #e0e7ff; color: #4338ca; }
+    .status-reviewing { background: #fef3c7; color: #d97706; }
+    .status-interview { background: #d1fae5; color: #065f46; }
+    .status-offer { background: #fce7f3; color: #be185d; }
+    .btn-view {
+        background: none;
+        border: none;
+        color: #f59e0b;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .btn-view:hover { transform: translateX(4px); color: #ea580c; }
+    .alert-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .alert-info { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+    .alert-frequency {
+        background: #e2e8f0;
+        padding: 0.2rem 0.5rem;
+        border-radius: 1rem;
+        font-size: 0.7rem;
+    }
+    .btn-danger-small {
+        background: #ef4444;
+        color: white;
+        border: none;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .btn-danger-small:hover { background: #dc2626; }
+    .quick-actions {
+        background: rgba(255,255,255,0.9);
+        backdrop-filter: blur(8px);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-top: 1rem;
+    }
+    .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    .action-card {
+        background: rgba(255,255,255,0.8);
+        padding: 1rem;
+        text-align: center;
+        text-decoration: none;
+        color: #1e293b;
+        border-radius: 0.75rem;
+        transition: 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    .action-card:hover {
+        background: white;
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        border-color: #f59e0b;
+    }
+    .action-card i { font-size: 1.5rem; color: #f59e0b; }
+    .empty-state { text-align: center; padding: 2rem; color: #64748b; }
+    .form-group { margin-bottom: 0.75rem; }
+    .form-control {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.375rem;
+    }
+    .btn-primary-small {
+        background: linear-gradient(135deg, #f59e0b, #ea580c);
+        color: white;
+        border: none;
+        padding: 0.375rem 0.875rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-weight: 500;
+        transition: 0.2s;
+    }
+    .btn-primary-small:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(245,158,11,0.3); }
+    .btn-outline-small {
+        background: transparent;
+        border: 1px solid #f59e0b;
+        color: #f59e0b;
+        padding: 0.375rem 0.875rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-weight: 500;
+        transition: 0.2s;
+    }
+    .btn-outline-small:hover { background: #f59e0b; color: white; }
+    @media (max-width: 768px) {
+        .stats-grid { grid-template-columns: repeat(2,1fr); }
+        .dashboard-grid { grid-template-columns: 1fr; }
+        .dashboard-container { padding: 1rem; }
+    }
+</style>
+
+<canvas id="dashboard-bg-canvas"></canvas>
+<script type="module">
+    import * as THREE from 'three';
+
+    const canvas = document.getElementById('dashboard-bg-canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x000000, 0);
+
+    // Golden torus knot particles
+    const particlesCount = 2000;
+    const positions = new Float32Array(particlesCount * 3);
+    const colors = new Float32Array(particlesCount * 3);
+
+    for (let i = 0; i < particlesCount; i++) {
+        const t = (i / particlesCount) * Math.PI * 2;
+        const radius = 3.5;
+        const tube = 0.9;
+        const p = 3;
+        const q = 7;
+        const x = radius * (1 + tube * Math.cos(q * t)) * Math.cos(p * t);
+        const y = radius * (1 + tube * Math.cos(q * t)) * Math.sin(p * t);
+        const z = radius * tube * Math.sin(q * t);
+        positions[i*3] = x * 2.2;
+        positions[i*3+1] = y * 2.2;
+        positions[i*3+2] = z * 2.2;
+
+        const hue = 0.10 + (i / particlesCount) * 0.1; // gold to orange
+        const saturation = 0.9;
+        const lightness = 0.65;
+        const color = new THREE.Color().setHSL(hue, saturation, lightness);
+        colors[i*3] = color.r;
+        colors[i*3+1] = color.g;
+        colors[i*3+2] = color.b;
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const material = new THREE.PointsMaterial({ size: 0.09, vertexColors: true, transparent: true, opacity: 0.9 });
+    const particles = new THREE.Points(geometry, material);
+    scene.add(particles);
+
+    // Floating tiny gold stars
+    const starCount = 1200;
+    const starPositions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+        starPositions[i*3] = (Math.random() - 0.5) * 50;
+        starPositions[i*3+1] = (Math.random() - 0.5) * 30;
+        starPositions[i*3+2] = (Math.random() - 0.5) * 40 - 20;
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0xffaa66, size: 0.07 });
+    const stars = new THREE.Points(starGeo, starMat);
+    scene.add(stars);
+
+    camera.position.z = 20;
+
+    function animate() {
+        requestAnimationFrame(animate);
+        particles.rotation.y += 0.002;
+        particles.rotation.x += 0.001;
+        stars.rotation.y -= 0.0005;
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+</script>
+
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1><i class="fas fa-chart-line"></i> Welcome, {{ username }}! 👋</h1>
+        <p>Track your job applications, saved jobs, and job alerts</p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ applications|length }}</div>
+            <div class="stat-label">Applications</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ saved_jobs|length }}</div>
+            <div class="stat-label">Saved Jobs</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ job_alerts|length }}</div>
+            <div class="stat-label">Job Alerts</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ status_counts.applied + status_counts.reviewing + status_counts.interview + status_counts.offer }}</div>
+            <div class="stat-label">Active Apps</div>
+        </div>
+    </div>
+
+    <!-- Status Breakdown -->
+    <div class="status-breakdown">
+        <h3><i class="fas fa-chart-simple"></i> Application Status</h3>
+        <div class="status-item">
+            <span class="status-label">Applied</span>
+            <div class="progress-bar"><div class="progress" style="width: {{ (status_counts.applied / (applications|length) * 100) if applications|length > 0 else 0 }}%; background: #6366f1;"></div></div>
+            <span class="status-count">{{ status_counts.applied }}</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Reviewing</span>
+            <div class="progress-bar"><div class="progress" style="width: {{ (status_counts.reviewing / (applications|length) * 100) if applications|length > 0 else 0 }}%; background: #f59e0b;"></div></div>
+            <span class="status-count">{{ status_counts.reviewing }}</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Interview</span>
+            <div class="progress-bar"><div class="progress" style="width: {{ (status_counts.interview / (applications|length) * 100) if applications|length > 0 else 0 }}%; background: #10b981;"></div></div>
+            <span class="status-count">{{ status_counts.interview }}</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Offer</span>
+            <div class="progress-bar"><div class="progress" style="width: {{ (status_counts.offer / (applications|length) * 100) if applications|length > 0 else 0 }}%; background: #8b5cf6;"></div></div>
+            <span class="status-count">{{ status_counts.offer }}</span>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- Recent Applications -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3><i class="fas fa-file-alt"></i> Recent Applications</h3>
+                <a href="{{ url_for('applications_page') }}" class="btn-link">View All →</a>
+            </div>
+            <div class="card-body">
+                {% if applications %}
+                    {% for app in applications[:5] %}
+                    <div class="job-item">
+                        <div class="job-info">
+                            <div class="job-title">{{ app.title }}</div>
+                            <div class="job-company">{{ app.company }}</div>
+                            <div class="job-location"><i class="fas fa-map-marker-alt"></i> {{ app.location }}</div>
+                        </div>
+                        <div>
+                            <span class="status-badge status-{{ app.status }}">{{ app.status|title }}</span>
+                            <small>{{ app.applied_date[:10] }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="empty-state">No applications yet. <a href="{{ url_for('jobs') }}" style="color: #f59e0b;">Browse jobs →</a></p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Saved Jobs -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3><i class="fas fa-bookmark"></i> Saved Jobs</h3>
+                <a href="{{ url_for('saved_jobs_page') }}" class="btn-link">View All →</a>
+            </div>
+            <div class="card-body">
+                {% if saved_jobs %}
+                    {% for job in saved_jobs[:5] %}
+                    <div class="job-item">
+                        <div class="job-info">
+                            <div class="job-title">{{ job.title }}</div>
+                            <div class="job-company">{{ job.company }}</div>
+                            <div class="job-location"><i class="fas fa-map-marker-alt"></i> {{ job.location }}</div>
+                        </div>
+                        <a href="{{ url_for('job_detail', job_id=job.job_id) }}" class="btn-view">View</a>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="empty-state">No saved jobs. <a href="{{ url_for('jobs') }}" style="color: #f59e0b;">Browse and save jobs →</a></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Alerts -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <h3><i class="fas fa-bell"></i> Job Alerts</h3>
+            <button class="btn-primary-small" onclick="document.getElementById('alertForm').style.display='block'">+ Create Alert</button>
+        </div>
+        <div class="card-body">
+            <div id="alertForm" style="display: none; margin-bottom: 1rem;">
+                <form method="post" action="{{ url_for('create_alert') }}">
+                    <div class="form-group">
+                        <input type="text" name="keyword" placeholder="Job keyword (e.g., Software Engineer)" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" name="location" placeholder="Location (e.g., Nairobi)" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <select name="frequency" class="form-control">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="instant">Instant</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary-small">Create Alert</button>
+                    <button type="button" class="btn-outline-small" onclick="this.parentElement.style.display='none'">Cancel</button>
+                </form>
+            </div>
+
+            {% if job_alerts %}
+                {% for alert in job_alerts %}
+                <div class="alert-item">
+                    <div class="alert-info">
+                        <strong>{{ alert.keyword }}</strong>
+                        <span>📍 {{ alert.location or 'Anywhere' }}</span>
+                        <span class="alert-frequency">{{ alert.frequency }}</span>
+                    </div>
+                    <form method="post" action="{{ url_for('delete_alert', alert_id=alert.id) }}">
+                        <button type="submit" class="btn-danger-small">Delete</button>
+                    </form>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-state">No job alerts. Create one to get notified about new jobs!</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+        <div class="actions-grid">
+            <a href="{{ url_for('jobs') }}" class="action-card">
+                <i class="fas fa-search"></i>
+                <span>Browse Jobs</span>
+            </a>
+            <a href="{{ url_for('analyzer') }}" class="action-card">
+                <i class="fas fa-robot"></i>
+                <span>AI Resume Analyzer</span>
+            </a>
+            <a href="{{ url_for('salary_calculator') }}" class="action-card">
+                <i class="fas fa-chart-line"></i>
+                <span>Salary Calculator</span>
+            </a>
+            <a href="{{ url_for('interview_prep') }}" class="action-card">
+                <i class="fas fa-comments"></i>
+                <span>Interview Prep</span>
+            </a>
+            <a href="{{ url_for('profile') }}" class="action-card">
+                <i class="fas fa-user-edit"></i>
+                <span>Update Profile</span>
+            </a>
+            <a href="{{ url_for('pricing') }}" class="action-card">
+                <i class="fas fa-crown"></i>
+                <span>Upgrade to Pro</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

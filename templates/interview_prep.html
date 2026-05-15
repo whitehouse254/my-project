@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Interview Preparation - Resume Optimizer{% endblock %}
+
+{% block content %}
+<div class="interview-container">
+    <div class="interview-header">
+        <h1><i class="fas fa-comments"></i> Interview Preparation</h1>
+        <p>Practice with real interview questions and get expert tips</p>
+    </div>
+
+    <div class="filter-section">
+        <form method="get" class="filter-form">
+            <input type="text" name="job_title" placeholder="Filter by job title" value="{{ job_title }}" class="form-control">
+            <select name="category" class="form-control">
+                <option value="">All Categories</option>
+                <option value="Technical" {% if category == 'Technical' %}selected{% endif %}>Technical</option>
+                <option value="Behavioral" {% if category == 'Behavioral' %}selected{% endif %}>Behavioral</option>
+                <option value="Marketing" {% if category == 'Marketing' %}selected{% endif %}>Marketing</option>
+            </select>
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </form>
+    </div>
+
+    <div class="questions-grid">
+        {% for question in questions %}
+        <div class="question-card">
+            <div class="question-header">
+                <div class="question-category">
+                    <span class="category-badge category-{{ question.category.lower() }}">
+                        {{ question.category }}
+                    </span>
+                    <span class="difficulty-badge difficulty-{{ question.difficulty.lower() }}">
+                        {{ question.difficulty }}
+                    </span>
+                </div>
+                <div class="question-title">{{ question.question }}</div>
+            </div>
+            <div class="question-body" style="display: none;">
+                <div class="sample-answer">
+                    <strong><i class="fas fa-comment-dots"></i> Sample Answer:</strong>
+                    <p>{{ question.sample_answer }}</p>
+                </div>
+                <div class="tips">
+                    <strong><i class="fas fa-lightbulb"></i> Tips:</strong>
+                    <p>{{ question.tips }}</p>
+                </div>
+                <div class="practice-area">
+                    <textarea placeholder="Practice your answer here..." class="form-control" rows="4"></textarea>
+                    <button class="btn-outline-small" onclick="saveAnswer(this)">Save Practice Answer</button>
+                </div>
+            </div>
+            <div class="question-footer">
+                <button class="btn-outline-small" onclick="toggleQuestion(this)">View Answer</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="resources-section">
+        <h3><i class="fas fa-graduation-cap"></i> Additional Resources</h3>
+        <div class="resources-grid">
+            <div class="resource-card">
+                <i class="fas fa-video"></i>
+                <h4>Mock Interview</h4>
+                <p>Practice with AI-powered mock interviews</p>
+                <button class="btn-outline-small" onclick="alert('Coming soon!')">Start Practice</button>
+            </div>
+            <div class="resource-card">
+                <i class="fas fa-file-alt"></i>
+                <h4>Common Questions PDF</h4>
+                <p>Download 100+ common interview questions</p>
+                <button class="btn-outline-small" onclick="alert('Download will be available for premium users')">Download</button>
+           

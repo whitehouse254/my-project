@@ -1,0 +1,550 @@
+{% extends "base.html" %}
+
+{% block title %}AI Resume Analyzer - Resume Optimizer{% endblock %}
+
+{% block content %}
+<style>
+    /* Hide default base canvas */
+    #bg-canvas {
+        display: none !important;
+    }
+    /* Custom 3D canvas for analyzer page */
+    #analyzer-bg-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -2;
+        pointer-events: none;
+    }
+    .analyzer-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+        position: relative;
+        z-index: 1;
+    }
+    .analyzer-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        color: white;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .analyzer-header h1 {
+        font-size: 2.5rem;
+        background: linear-gradient(135deg, #a855f7, #6366f1);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+    .analyzer-header p {
+        color: rgba(255,255,255,0.9);
+    }
+    .analyzer-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .analyzer-panel {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(12px);
+        border-radius: 1.5rem;
+        overflow: hidden;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        transition: transform 0.3s;
+        border: 1px solid rgba(255,255,255,0.3);
+    }
+    .analyzer-panel:hover {
+        transform: translateY(-4px);
+    }
+    .panel-header {
+        background: linear-gradient(135deg, #8b5cf6, #6366f1);
+        color: white;
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .panel-header i {
+        font-size: 1.2rem;
+    }
+    .panel-header h3 {
+        margin: 0;
+        font-size: 1.2rem;
+    }
+    .analyzer-panel textarea {
+        width: 100%;
+        height: 320px;
+        padding: 1rem;
+        border: none;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        background: rgba(255,255,255,0.9);
+        resize: vertical;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .analyzer-panel textarea:focus {
+        outline: none;
+        background: white;
+    }
+    .panel-footer {
+        padding: 0.75rem 1rem;
+        background: #f8fafc;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        color: #475569;
+        border-top: 1px solid #e2e8f0;
+    }
+    .btn-outline-small {
+        background: transparent;
+        border: 1px solid #8b5cf6;
+        color: #8b5cf6;
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    .btn-outline-small:hover {
+        background: #8b5cf6;
+        color: white;
+    }
+    .analyzer-actions {
+        text-align: center;
+        margin: 2rem 0;
+    }
+    .btn-large {
+        padding: 0.75rem 2rem;
+        font-size: 1rem;
+        background: linear-gradient(135deg, #8b5cf6, #6366f1);
+        border: none;
+        border-radius: 2rem;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .btn-large:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(139,92,246,0.3);
+    }
+    .analysis-results {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(12px);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        margin-top: 2rem;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        border: 1px solid rgba(255,255,255,0.3);
+    }
+    .score-container {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .score-circle {
+        position: relative;
+        width: 160px;
+        height: 160px;
+        margin: 0 auto 1rem;
+    }
+    .score-value {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 28px;
+        font-weight: 800;
+        color: #8b5cf6;
+    }
+    .score-message {
+        font-weight: 500;
+    }
+    .stats-summary {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+    .stat-box {
+        text-align: center;
+    }
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #8b5cf6;
+    }
+    .missing-keywords, .suggestions, .ats-issues {
+        margin-bottom: 1.5rem;
+    }
+    .keywords-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    .missing-tag {
+        background: #fee2e2;
+        color: #dc2626;
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.8rem;
+    }
+    .suggestions ul {
+        list-style: none;
+        margin-top: 0.5rem;
+    }
+    .suggestions li {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        background: #f1f5f9;
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .suggestions li i {
+        color: #8b5cf6;
+    }
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 1.5rem;
+    }
+    @media (max-width: 768px) {
+        .analyzer-container { padding: 1rem; }
+        .analyzer-grid { grid-template-columns: 1fr; }
+        .stats-summary { flex-direction: column; align-items: center; gap: 1rem; }
+        .action-buttons { flex-direction: column; align-items: center; }
+    }
+</style>
+
+<canvas id="analyzer-bg-canvas"></canvas>
+<script type="module">
+    import * as THREE from 'three';
+
+    const canvas = document.getElementById('analyzer-bg-canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x000000, 0);
+
+    // Purple/blue swirling particles – a torus knot
+    const particlesCount = 2200;
+    const positions = new Float32Array(particlesCount * 3);
+    const colors = new Float32Array(particlesCount * 3);
+
+    for (let i = 0; i < particlesCount; i++) {
+        const t = (i / particlesCount) * Math.PI * 2;
+        const radius = 3.2;
+        const tube = 0.85;
+        const p = 3;
+        const q = 7;
+        const x = radius * (1 + tube * Math.cos(q * t)) * Math.cos(p * t);
+        const y = radius * (1 + tube * Math.cos(q * t)) * Math.sin(p * t);
+        const z = radius * tube * Math.sin(q * t);
+        positions[i*3] = x * 2.3;
+        positions[i*3+1] = y * 2.3;
+        positions[i*3+2] = z * 2.3;
+
+        // Color: purple to blue gradient
+        const hue = 0.7 + (i / particlesCount) * 0.15; // 0.7→0.85
+        const saturation = 0.8;
+        const lightness = 0.65;
+        const color = new THREE.Color().setHSL(hue, saturation, lightness);
+        colors[i*3] = color.r;
+        colors[i*3+1] = color.g;
+        colors[i*3+2] = color.b;
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const material = new THREE.PointsMaterial({ size: 0.09, vertexColors: true, transparent: true, opacity: 0.85 });
+    const particles = new THREE.Points(geometry, material);
+    scene.add(particles);
+
+    // Floating small stars
+    const starCount = 1000;
+    const starPositions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+        starPositions[i*3] = (Math.random() - 0.5) * 45;
+        starPositions[i*3+1] = (Math.random() - 0.5) * 30;
+        starPositions[i*3+2] = (Math.random() - 0.5) * 35 - 15;
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0xaa88ff, size: 0.07 });
+    const stars = new THREE.Points(starGeo, starMat);
+    scene.add(stars);
+
+    camera.position.z = 21;
+
+    function animate() {
+        requestAnimationFrame(animate);
+        particles.rotation.y += 0.002;
+        particles.rotation.x += 0.001;
+        stars.rotation.y -= 0.0005;
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+</script>
+
+<div class="analyzer-container">
+    <div class="analyzer-header">
+        <h1><i class="fas fa-robot"></i> AI Resume Analyzer</h1>
+        <p>Paste your resume and a job description to see how well you match</p>
+    </div>
+
+    <div class="analyzer-grid">
+        <div class="analyzer-panel">
+            <div class="panel-header">
+                <i class="fas fa-file-alt"></i>
+                <h3>Your Resume</h3>
+            </div>
+            <textarea id="resume" placeholder="Paste your resume here..."></textarea>
+            <div class="panel-footer">
+                <small><i class="fas fa-info-circle"></i> Paste your complete resume text</small>
+                <div class="upload-option">
+                    <label class="btn-outline-small">
+                        <i class="fas fa-upload"></i> Upload File
+                        <input type="file" id="resumeFile" accept=".txt,.pdf,.docx" style="display: none;">
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="analyzer-panel">
+            <div class="panel-header">
+                <i class="fas fa-briefcase"></i>
+                <h3>Job Description</h3>
+            </div>
+            <textarea id="job_desc" placeholder="Paste the job description here..."></textarea>
+            <div class="panel-footer">
+                <small><i class="fas fa-info-circle"></i> Paste the job you want to analyze against</small>
+                <div class="example-option">
+                    <a href="#" onclick="loadExample(); return false;" class="btn-outline-small">Load Example</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="analyzer-actions">
+        <button id="analyzeBtn" class="btn-large">
+            <i class="fas fa-chart-line"></i> Analyze Match Score
+        </button>
+    </div>
+
+    <div id="analysisResults" class="analysis-results" style="display: none;">
+        <div class="score-container">
+            <div class="score-circle">
+                <svg width="160" height="160" viewBox="0 0 160 160">
+                    <circle cx="80" cy="80" r="72" fill="none" stroke="#e2e8f0" stroke-width="8"/>
+                    <circle id="scoreCircle" cx="80" cy="80" r="72" fill="none" stroke="#8b5cf6" stroke-width="8"
+                            stroke-dasharray="452.389" stroke-dashoffset="452.389" transform="rotate(-90 80 80)"/>
+                </svg>
+                <div class="score-value" id="scoreValue">0%</div>
+            </div>
+            <div class="score-message" id="scoreMessage"></div>
+        </div>
+
+        <div class="stats-summary">
+            <div class="stat-box">
+                <div class="stat-label">Keywords Matched</div>
+                <div class="stat-number" id="matchedCount">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Total Keywords</div>
+                <div class="stat-number" id="totalKeywords">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">ATS Score</div>
+                <div class="stat-number" id="atsScore">0</div>
+            </div>
+        </div>
+
+        <div class="missing-keywords">
+            <h3><i class="fas fa-exclamation-triangle"></i> Missing Keywords</h3>
+            <div id="missingKeywords" class="keywords-tags"></div>
+        </div>
+
+        <div class="suggestions">
+            <h3><i class="fas fa-lightbulb"></i> Suggestions to Improve</h3>
+            <ul id="suggestionsList"></ul>
+        </div>
+
+        <div class="ats-issues">
+            <h3><i class="fas fa-shield-alt"></i> ATS Compatibility</h3>
+            <div id="atsIssues"></div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn-outline-small" onclick="copyResults()">
+                <i class="fas fa-copy"></i> Copy Results
+            </button>
+            <button class="btn-outline-small" onclick="downloadReport()">
+                <i class="fas fa-download"></i> Download Report
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // File upload handling
+    document.getElementById('resumeFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('resume').value = e.target.result;
+            };
+            reader.readAsText(file);
+        }
+    });
+
+    // Load example
+    function loadExample() {
+        document.getElementById('job_desc').value = `Senior Software Engineer
+
+We are looking for an experienced Software Engineer to join our team.
+
+Requirements:
+- 5+ years of software development experience
+- Strong Python and JavaScript skills
+- Experience with React, Node.js, and AWS
+- Bachelor's degree in Computer Science or related field
+- Excellent problem-solving and communication skills
+
+Responsibilities:
+- Design and develop scalable web applications
+- Collaborate with cross-functional teams
+- Mentor junior developers
+- Participate in code reviews
+
+Benefits:
+- Competitive salary
+- Health insurance
+- Remote work options
+- Professional development budget`;
+    }
+
+    // Copy results
+    function copyResults() {
+        const results = document.getElementById('analysisResults').innerText;
+        navigator.clipboard.writeText(results);
+        alert('Results copied to clipboard!');
+    }
+
+    // Download report
+    function downloadReport() {
+        const results = document.getElementById('analysisResults').innerText;
+        const blob = new Blob([results], {type: 'text/plain'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'resume_analysis_report.txt';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // Main analysis function
+    document.getElementById('analyzeBtn').addEventListener('click', async function() {
+        const resume = document.getElementById('resume').value;
+        const jobDesc = document.getElementById('job_desc').value;
+        
+        if (!resume || !jobDesc) {
+            alert('Please provide both resume and job description');
+            return;
+        }
+        
+        document.getElementById('analysisResults').style.display = 'block';
+        document.getElementById('scoreValue').textContent = 'Analyzing...';
+        
+        const response = await fetch('/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `resume=${encodeURIComponent(resume)}&job_desc=${encodeURIComponent(jobDesc)}`
+        });
+        
+        const data = await response.json();
+        
+        // Update score
+        const score = data.score;
+        document.getElementById('scoreValue').textContent = score + '%';
+        document.getElementById('matchedCount').textContent = data.matched_count;
+        document.getElementById('totalKeywords').textContent = data.total_keywords;
+        document.getElementById('atsScore').textContent = data.ats_score || score;
+        
+        // Update score message
+        const scoreMessage = document.getElementById('scoreMessage');
+        if (score >= 80) {
+            scoreMessage.innerHTML = '🎉 Excellent match! Your resume is well-aligned!';
+            scoreMessage.style.color = '#10b981';
+        } else if (score >= 60) {
+            scoreMessage.innerHTML = '👍 Good match! A few improvements will help!';
+            scoreMessage.style.color = '#f59e0b';
+        } else {
+            scoreMessage.innerHTML = '📈 Needs improvement! Follow the suggestions below.';
+            scoreMessage.style.color = '#ef4444';
+        }
+        
+        // Update circle
+        const circumference = 452.389;
+        const offset = circumference - (score / 100) * circumference;
+        document.getElementById('scoreCircle').style.strokeDashoffset = offset;
+        
+        // Missing keywords
+        let missingHtml = '';
+        if (data.missing_keywords && data.missing_keywords.length > 0) {
+            data.missing_keywords.forEach(k => {
+                missingHtml += `<span class="missing-tag">${k}</span>`;
+            });
+        } else {
+            missingHtml = '<p style="color: #10b981;">✨ Great job! No missing keywords found!</p>';
+        }
+        document.getElementById('missingKeywords').innerHTML = missingHtml;
+        
+        // Suggestions
+        let suggestionsHtml = '';
+        if (data.suggestions && data.suggestions.length > 0) {
+            data.suggestions.forEach(s => {
+                suggestionsHtml += `<li><i class="fas fa-arrow-right"></i> ${s}</li>`;
+            });
+        } else {
+            suggestionsHtml = '<li><i class="fas fa-check-circle"></i> Your resume looks great!</li>';
+        }
+        document.getElementById('suggestionsList').innerHTML = suggestionsHtml;
+        
+        // ATS Issues
+        let atsHtml = '';
+        if (data.ats_issues && data.ats_issues.length > 0) {
+            atsHtml = '<ul>';
+            data.ats_issues.forEach(issue => {
+                atsHtml += `<li><i class="fas fa-warning"></i> ${issue}</li>`;
+            });
+            atsHtml += '</ul>';
+        } else {
+            atsHtml = '<p style="color: #10b981;">✅ Your resume is ATS-friendly!</p>';
+        }
+        document.getElementById('atsIssues').innerHTML = atsHtml;
+        
+        document.getElementById('analysisResults').scrollIntoView({ behavior: 'smooth' });
+    });
+</script>
+{% endblock %}
