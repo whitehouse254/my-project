@@ -1,27 +1,16 @@
-
-
-
 # 🛒 Victor's Supermarket Management System
-
 A full‑featured, desktop‑based Point of Sale (POS) and inventory management system for supermarkets.  
-Built with Python (Tkinter + SQLite) – green theme, role‑based access, 500+ products, sales reports, barcode printing, and more.
-
+Built with Python (Tkinter + SQLite) – green theme, role‑based access, 500+ products, sales reports, barcode printing .
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
 ![SQLite](https://img.shields.io/badge/Database-SQLite-green)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
-
 ---
-
 ## 📸 Screenshots
-
 | Login | Main Menu | Point of Sale |
 |-------|-----------|---------------|
 | <img width="1769" height="1123" alt="Screenshot 2026-05-19 160840" src="https://github.com/user-attachments/assets/10adf03f-1af3-4485-9833-f090010e9896" /> | <img width="1920" height="1109" alt="Screenshot 2026-05-19 161116" src="https://github.com/user-attachments/assets/1d89a44c-0593-48d0-acc5-f883acdece70" /> | <img width="1916" height="1117" alt="Screenshot 2026-05-19 161144" src="https://github.com/user-attachments/assets/f1c867ed-82a6-4edf-b681-4adf374e9f18" />|
-
 ---
-
 ##  Features
-
 - **Secure login** with roles: **Admin** (full control) and **Cashier** (POS only)
 - **Point of Sale** – search products, scan barcode, add to cart, apply discount, print receipt
 - **Inventory Management** – add, edit, delete products; low stock alerts; export to CSV
@@ -36,11 +25,8 @@ Built with Python (Tkinter + SQLite) – green theme, role‑based access, 500+ 
 - **Automatic Database Backup** – scheduled daily backup (configurable)
 - **Advanced Charts** – sales trend graph, category revenue pie chart
 - **Green Theme** – pleasant, consistent green colour palette
-
 ---
-
 ##  Technology Stack
-
 | Component       | Technology                       |
 |----------------|----------------------------------|
 | Language       | Python 3.8+                      |
@@ -50,11 +36,8 @@ Built with Python (Tkinter + SQLite) – green theme, role‑based access, 500+ 
 | Barcode        | `python-barcode` + Pillow        |
 | Scheduling     | `schedule`                       |
 | Authentication | SHA‑256 + salt (no external auth)|
-
 ---
-
 ##  Installation
-
 ### 1. Clone the repository (or download the `.py` file)
 
 ```bash
