@@ -235,7 +235,7 @@ class Database:
         if not self.cursor.fetchone():
             hashed_pwd = hashlib.sha256("victor@123".encode()).hexdigest()
             self.cursor.execute("INSERT INTO users (username, password, role, full_name) VALUES (?, ?, ?, ?)",
-                                ("victor", hashed_pwd, "victor", "System Administrator"))
+                                ("victor", hashed_pwd, "admin", "System Administrator"))
 
         # Insert default cashier user
         self.cursor.execute("SELECT * FROM users WHERE username='cashier'")
