@@ -21,7 +21,7 @@ import schedule
 # ==================== CONFIGURATION MANAGER ====================
 class ConfigManager:
     DEFAULT_CONFIG = {
-        "company_name": "VICTOR`S Supermarket ",
+        "company_name": "VICTOR'S SUPER MARKET",   # Changed to Victor's
         "currency": "Ksh",
         "tax_rates": [
             {"name": "VAT 16%", "rate": 0.16, "categories": ["general", "electronics", "beverages", "snacks"]},
@@ -75,6 +75,7 @@ class Database:
         self.populate_products()
 
     def create_tables(self):
+        # Products table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS products (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             barcode TEXT UNIQUE,
@@ -88,6 +89,8 @@ class Database:
             supplier TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''')
+
+        # Sales table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS sales (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             invoice_no TEXT UNIQUE,
@@ -104,6 +107,8 @@ class Database:
             sale_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             branch_id INTEGER DEFAULT 1
         )''')
+
+        # Sale items table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS sale_items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             invoice_no TEXT,
@@ -114,6 +119,8 @@ class Database:
             total REAL,
             returned BOOLEAN DEFAULT 0
         )''')
+
+        # Users table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE,
@@ -122,6 +129,8 @@ class Database:
             full_name TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''')
+
+        # Suppliers table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS suppliers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT UNIQUE,
@@ -130,6 +139,8 @@ class Database:
             email TEXT,
             address TEXT
         )''')
+
+        # Stock movements table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS stock_movements (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             product_id INTEGER,
@@ -139,6 +150,8 @@ class Database:
             user TEXT,
             movement_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''')
+
+        # Returns table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS returns (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             original_invoice TEXT,
@@ -151,6 +164,8 @@ class Database:
             cashier TEXT,
             return_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''')
+
+        # Loyalty table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS loyalty (
             customer_phone TEXT PRIMARY KEY,
             customer_name TEXT,
@@ -159,6 +174,8 @@ class Database:
             total_spent REAL DEFAULT 0,
             joined_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''')
+
+        # Expenses table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS expenses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             category TEXT,
@@ -167,6 +184,8 @@ class Database:
             expense_date DATE,
             user TEXT
         )''')
+
+        # Branches table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS branches (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT UNIQUE,
@@ -174,6 +193,8 @@ class Database:
             phone TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''')
+
+        # Audit log table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS audit_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user TEXT,
@@ -184,6 +205,8 @@ class Database:
             new_value TEXT,
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''')
+
+        # Product variants table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS product_variants (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             product_id INTEGER,
@@ -193,6 +216,8 @@ class Database:
             stock_quantity INTEGER DEFAULT 0,
             FOREIGN KEY(product_id) REFERENCES products(id)
         )''')
+
+        # Promotions table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS promotions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT,
@@ -204,21 +229,28 @@ class Database:
             min_quantity INTEGER DEFAULT 1,
             is_active BOOLEAN DEFAULT 1
         )''')
+
         # Insert default admin user
         self.cursor.execute("SELECT * FROM users WHERE username='admin'")
         if not self.cursor.fetchone():
             hashed_pwd = hashlib.sha256("victor@123".encode()).hexdigest()
             self.cursor.execute("INSERT INTO users (username, password, role, full_name) VALUES (?, ?, ?, ?)",
                                 ("victor", hashed_pwd, "victor", "System Administrator"))
+
+        # Insert default cashier user
         self.cursor.execute("SELECT * FROM users WHERE username='cashier'")
         if not self.cursor.fetchone():
             hashed_pwd = hashlib.sha256("".encode()).hexdigest()
             self.cursor.execute("INSERT INTO users (username, password, role, full_name) VALUES (?, ?, ?, ?)",
                                 ("cashier", hashed_pwd, "cashier", "Store Cashier"))
+
+        # Insert default branch
         self.cursor.execute("SELECT COUNT(*) FROM branches")
         if self.cursor.fetchone()[0] == 0:
             self.cursor.execute("INSERT INTO branches (name, location, phone) VALUES (?, ?, ?)",
                                 ("Main Store", "Nairobi", "+254700000000"))
+
+        # Insert sample suppliers if empty
         self.cursor.execute("SELECT COUNT(*) FROM suppliers")
         if self.cursor.fetchone()[0] == 0:
             sample_suppliers = [
@@ -233,15 +265,15 @@ class Database:
                 self.cursor.execute(
                     "INSERT INTO suppliers (name, contact_person, phone, email, address) VALUES (?, ?, ?, ?, ?)",
                     supplier)
+
         self.conn.commit()
 
     def populate_products(self):
-        """Generate 500 products for inventory"""
+        """Generate 500 products automatically"""
         self.cursor.execute("SELECT COUNT(*) FROM products")
         if self.cursor.fetchone()[0] > 0:
             return  # products already exist
 
-        # Get supplier names for random assignment
         self.cursor.execute("SELECT name FROM suppliers")
         suppliers = [row[0] for row in self.cursor.fetchall()]
         if not suppliers:
@@ -254,39 +286,29 @@ class Database:
         units = ["pcs", "kg", "L", "g", "ml", "pack"]
 
         product_count = 0
-        for i in range(1, 501):  # 500 products
+        for i in range(1, 501):
             cat = random.choice(categories)
             # Create a realistic product name
             if cat == "Grains":
-                name = random.choice(
-                    ["Rice", "Maize Flour", "Wheat Flour", "Oats", "Quinoa"]) + f" {random.randint(1, 5)}kg"
+                name = random.choice(["Rice", "Maize Flour", "Wheat Flour", "Oats", "Quinoa"]) + f" {random.randint(1,5)}kg"
             elif cat == "Dairy":
-                name = random.choice(
-                    ["Milk", "Yogurt", "Cheese", "Butter", "Cream"]) + f" {random.choice(['250ml', '500ml', '1L'])}"
+                name = random.choice(["Milk", "Yogurt", "Cheese", "Butter", "Cream"]) + f" {random.choice(['250ml','500ml','1L'])}"
             elif cat == "Beverages":
-                name = random.choice(["Mineral Water", "Soda", "Juice", "Energy Drink",
-                                      "Coffee"]) + f" {random.choice(['330ml', '500ml', '1L'])}"
+                name = random.choice(["Mineral Water", "Soda", "Juice", "Energy Drink", "Coffee"]) + f" {random.choice(['330ml','500ml','1L'])}"
             elif cat == "Snacks":
-                name = random.choice(["Potato Chips", "Chocolate Bar", "Biscuits", "Popcorn",
-                                      "Peanuts"]) + f" {random.randint(50, 200)}g"
+                name = random.choice(["Potato Chips", "Chocolate Bar", "Biscuits", "Popcorn", "Peanuts"]) + f" {random.randint(50,200)}g"
             elif cat == "Fruits":
-                name = random.choice(
-                    ["Apple", "Banana", "Orange", "Mango", "Grapes"]) + f" {random.choice(['1kg', '500g', 'bunch'])}"
+                name = random.choice(["Apple", "Banana", "Orange", "Mango", "Grapes"]) + f" {random.choice(['1kg','500g','bunch'])}"
             elif cat == "Vegetables":
-                name = random.choice(
-                    ["Tomato", "Onion", "Potato", "Cabbage", "Carrot"]) + f" {random.choice(['1kg', '500g', 'piece'])}"
+                name = random.choice(["Tomato", "Onion", "Potato", "Cabbage", "Carrot"]) + f" {random.choice(['1kg','500g','piece'])}"
             elif cat == "Meat":
-                name = random.choice(["Beef", "Chicken", "Pork", "Fish Fillet",
-                                      "Sausages"]) + f" {random.choice(['500g', '1kg', 'pack'])}"
+                name = random.choice(["Beef", "Chicken", "Pork", "Fish Fillet", "Sausages"]) + f" {random.choice(['500g','1kg','pack'])}"
             elif cat == "Frozen":
-                name = random.choice(["Frozen Peas", "Ice Cream", "Frozen Chips", "Frozen Chicken",
-                                      "Pizza"]) + f" {random.choice(['500g', '1kg', '400g'])}"
+                name = random.choice(["Frozen Peas", "Ice Cream", "Frozen Chips", "Frozen Chicken", "Pizza"]) + f" {random.choice(['500g','1kg','400g'])}"
             elif cat == "Household":
-                name = random.choice(["Detergent", "Dish Soap", "Bleach", "Paper Towels",
-                                      "Trash Bags"]) + f" {random.choice(['500ml', '1L', 'pack'])}"
+                name = random.choice(["Detergent", "Dish Soap", "Bleach", "Paper Towels", "Trash Bags"]) + f" {random.choice(['500ml','1L','pack'])}"
             else:  # Personal Care
-                name = random.choice(["Shampoo", "Soap", "Toothpaste", "Deodorant",
-                                      "Lotion"]) + f" {random.choice(['250ml', '500ml', '100g'])}"
+                name = random.choice(["Shampoo", "Soap", "Toothpaste", "Deodorant", "Lotion"]) + f" {random.choice(['250ml','500ml','100g'])}"
 
             buying_price = round(random.uniform(10, 500), 2)
             selling_price = round(buying_price * random.uniform(1.2, 1.8), 2)
@@ -299,17 +321,30 @@ class Database:
             self.cursor.execute('''INSERT INTO products 
                 (barcode, name, category, buying_price, selling_price, quantity, min_stock, unit, supplier)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-                                (barcode, name, cat, buying_price, selling_price, quantity, min_stock, unit, supplier))
+                (barcode, name, cat, buying_price, selling_price, quantity, min_stock, unit, supplier))
             product_count += 1
 
             # Record initial stock movement
             self.cursor.execute('''INSERT INTO stock_movements 
                 (product_id, movement_type, quantity, reason, user)
                 VALUES (?, 'stock_in', ?, 'Initial stock', 'system')''',
-                                (product_count, quantity))
+                (product_count, quantity))
+
+        # Add sample sales
+        for _ in range(100):
+            random_date = datetime.now() - timedelta(days=random.randint(1, 90))
+            invoice_no = f"INV-{random_date.strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
+            total = random.randint(500, 15000)
+            customer_name = random.choice(['John Doe', 'Jane Smith', 'Bob Wilson', 'Alice Brown', 'Walk-in Customer'])
+            self.cursor.execute('''INSERT INTO sales 
+                (invoice_no, customer_name, total_amount, tax, net_amount, payment_method, cashier, sale_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+                (invoice_no, customer_name, total, total*0.16, total*1.16,
+                 random.choice(['Cash', 'Card', 'MPESA']),
+                 random.choice(['admin', 'cashier']), random_date))
 
         self.conn.commit()
-        print(f"✅ Added {product_count} products to inventory.")
+        print(f"✅ Successfully added {product_count} products to inventory!")
 
     def execute_query(self, query, params=()):
         self.cursor.execute(query, params)
@@ -325,8 +360,10 @@ class Database:
         return self.cursor.fetchone()
 
     def log_action(self, user, action, table_name, record_id, old_value="", new_value=""):
-        self.execute_query("INSERT INTO audit_log (user, action, table_name, record_id, old_value, new_value) VALUES (?,?,?,?,?,?)",
-                           (user, action, table_name, str(record_id), str(old_value), str(new_value)))
+        self.execute_query(
+            "INSERT INTO audit_log (user, action, table_name, record_id, old_value, new_value) VALUES (?,?,?,?,?,?)",
+            (user, action, table_name, str(record_id), str(old_value), str(new_value))
+        )
 
     def close(self):
         self.conn.close()
@@ -335,16 +372,15 @@ class Database:
 class SupermarketSystem:
     def __init__(self, root):
         self.root = root
-        self.root.title("🏪 Supermarket Management System - Green Edition")
+        self.root.title("🏪 VICTOR'S SUPER MARKET - Green Edition")
         self.root.state('zoomed')
-        self.root.configure(bg='#e8f5e9')   # light green background
+        self.root.configure(bg='#e8f5e9')
 
         self.db = Database()
         self.config = ConfigManager()
         self.current_user = None
         self.cart = []
 
-        # New green color palette
         self.colors = {
             'primary': '#2e7d32',
             'secondary': '#1b5e20',
@@ -388,8 +424,8 @@ class SupermarketSystem:
         login_card.place(relx=0.5, rely=0.5, anchor='center', width=500, height=500)
 
         tk.Label(login_card, text="🛒", font=('Segoe UI', 56), bg='white', fg=self.colors['primary']).pack(pady=(30,10))
-        tk.Label(login_card, text="VICTOR`S SUPERMARKET", font=('Segoe UI', 24, 'bold'), bg='white', fg=self.colors['primary']).pack()
-        tk.Label(login_card, text="enter logins", font=('Segoe UI', 12), bg='white', fg=self.colors['secondary']).pack(pady=5)
+        tk.Label(login_card, text="VICTOR'S SUPER MARKET", font=('Segoe UI', 22, 'bold'), bg='white', fg=self.colors['primary']).pack()
+        tk.Label(login_card, text="Login to Continue", font=('Segoe UI', 12), bg='white', fg=self.colors['secondary']).pack(pady=5)
 
         form_frame = tk.Frame(login_card, bg='white')
         form_frame.pack(pady=30, padx=40, fill='both', expand=True)
@@ -402,7 +438,7 @@ class SupermarketSystem:
         self.password_entry = tk.Entry(form_frame, font=('Segoe UI', 12), show='•', bg=self.colors['light'], relief='solid', bd=1)
         self.password_entry.pack(fill='x', pady=(0,25), ipady=8)
 
-        login_btn = tk.Button(form_frame, text="LOGIN", command=self.login, bg=self.colors['primary'], fg='white',
+        login_btn = tk.Button(form_frame, text="SIGN IN", command=self.login, bg=self.colors['primary'], fg='white',
                               font=('Segoe UI', 12, 'bold'), relief='flat', cursor='hand2')
         login_btn.pack(fill='x', ipady=10)
 
@@ -426,7 +462,7 @@ class SupermarketSystem:
         if user:
             self.current_user = {'id': user[0], 'username': user[1], 'role': user[3], 'full_name': user[4]}
             self.db.log_action(username, "LOGIN", "users", user[0], "", "Successful login")
-            messagebox.showinfo("Success", f"✨ Welcome , {self.current_user['full_name']}! ✨")
+            messagebox.showinfo("Success", f"✨ Welcome back, {self.current_user['full_name']}! ✨")
             self.show_main_menu()
         else:
             messagebox.showerror("Error", "❌ Invalid username or password!")
@@ -440,7 +476,7 @@ class SupermarketSystem:
         header_frame.pack(fill='x')
         tk.Frame(header_frame, bg=self.colors['primary'], height=40).pack(fill='x')
         tk.Frame(header_frame, bg=self.colors['accent'], height=40).pack(fill='x')
-        tk.Label(header_frame, text="🏪 VICTOR`S SUPERMARKET", font=('Segoe UI', 22, 'bold'), bg=self.colors['primary'], fg='white').place(x=30, y=25)
+        tk.Label(header_frame, text="🏪 VICTOR'S SUPER MARKET", font=('Segoe UI', 22, 'bold'), bg=self.colors['primary'], fg='white').place(x=30, y=25)
 
         user_frame = tk.Frame(header_frame, bg=self.colors['primary'])
         user_frame.place(relx=0.92, rely=0.15, anchor='ne')
@@ -854,7 +890,6 @@ class SupermarketSystem:
                 messagebox.showwarning("Warning", "Cart is empty!")
                 return
             subtotal = sum(i['total'] for i in self.cart)
-            # Promotions & discount (simplified)
             discount_amount = 0
             manual_discount = simpledialog.askfloat("Discount", "Apply additional discount (%)", minvalue=0, maxvalue=100)
             if manual_discount:
