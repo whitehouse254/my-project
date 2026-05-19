@@ -1,3 +1,6 @@
+
+
+
 # 🛒 Victor's Supermarket Management System
 A full‑featured, desktop‑based Point of Sale (POS) and inventory management system for supermarkets.  
 Built with Python (Tkinter + SQLite) – green theme, role‑based access, 500+ products, sales reports, barcode printing .
@@ -11,7 +14,7 @@ Built with Python (Tkinter + SQLite) – green theme, role‑based access, 500+ 
 ## 📸 Screenshots
 | Login | Main Menu | Point of Sale |
 |-------|-----------|---------------|
-| <img width="1769" height="1123" alt="Screenshot 2026-05-19 160840" src="https://github.com/user-attachments/assets/10adf03f-1af3-4485-9833-f090010e9896" /> | <img width="1920" height="1109" alt="Screenshot 2026-05-19 161116" src="https://github.com/user-attachments/assets/1d89a44c-0593-48d0-acc5-f883acdece70" /> | <img width="1916" height="1117" alt="Screenshot 2026-05-19 161144" src="https://github.com/user-attachments/assets/f1c867ed-82a6-4edf-b681-4adf374e9f18" />|
+| <img width="1357" height="640" alt="Screenshot 2026-05-19 205659" src="https://github.com/user-attachments/assets/0d2b8db8-00c9-4589-a912-d1e11aee04b7" /> | <img width="1346" height="642" alt="Screenshot 2026-05-19 205637" src="https://github.com/user-attachments/assets/3755c34a-716d-4e68-a268-616bf38bdb38" /> | <img width="1348" height="633" alt="Screenshot 2026-05-19 205520" src="https://github.com/user-attachments/assets/3f549a12-c434-4993-a516-7ad505c3b879" /> |
 
 ---
 
